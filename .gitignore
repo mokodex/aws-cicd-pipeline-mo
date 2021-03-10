@@ -1,2 +1,3 @@
 .terraform/
 .hide-from-github/
+terraform.tfvars
