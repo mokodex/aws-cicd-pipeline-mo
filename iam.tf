@@ -108,3 +108,54 @@ resource "aws_iam_role_policy_attachment" "tf-cicd-build-attachment-power"{
 }
 
 # code build is going to run docker image, which will execute the terrafrom scripts.
+
+
+##########################################
+# glue role
+
+resource "aws_iam_role" "glue_role" {
+  name = "glue_role"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "glue.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  tags = {
+    tag-key = "tag-value"
+  }
+}
+
+data "aws_iam_policy_document" "glue-policies-document"{
+    statement{
+        sid = ""
+        actions = ["logs:*", "s3:*", "codebuild:*", "secretsmanager:*", "iam:*"]
+        resources = ["*"]
+        effect = "Allow"
+    }
+}
+
+resource "aws_iam_policy" "glue-policy"{
+    name = "glue-policy"
+    path = "/"
+    description = "glue policy"
+    policy = data.aws_iam_policy_document.glue-policies-document.json
+}
+
+
+# attaches policy created to build role
+resource "aws_iam_role_policy_attachment" "glue-attachment"{
+    policy_arn = aws_iam_policy.glue-policy.arn
+    role = aws_iam_role.glue_role.id
+}
